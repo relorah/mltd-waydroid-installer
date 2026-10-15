@@ -1,4 +1,4 @@
-# MLTD Waydroid Installer (MWI) 0.2.5
+# MLTD Waydroid Installer (MWI)
 
 CachyOS / Arch Linux / Fedora + Waydroid Android 11環境で「アイドルマスター ミリオンライブ！ シアターデイズ（ミリシタ）」の動作環境を構築します。必要なホストパッケージを確認し、システム更新と併せて導入します。
 
