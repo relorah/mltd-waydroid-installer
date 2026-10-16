@@ -15,7 +15,7 @@ CachyOS / Arch Linux / Fedora 環境で「アイドルマスター ミリオン�
 - AMD Ryzen 7 9700X + Radeon RX 6600 XT
 - AMD BC250
 
-## 使い方
+## インストール方法
 
 ```bash
 chmod +x install.sh
