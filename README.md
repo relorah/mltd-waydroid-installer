@@ -33,9 +33,9 @@ chmod +x install.sh
 
 新規導入はAndroid 11 GAPPS（2025-06-28版）。Houdiniは固定コミットのwaydroid_scriptから取得し、同梱libnbとNativeBridge設定を適用します。
 
-ネットワークはDHCP・DNS・forwarding・NAT・HTTPSを確認し、必要に応じてWaydroidを再起動します。UFW有効時に必要なルールが不足している場合は、Waydroid用のDHCP・DNS・転送許可を追加するか `[y/N]` で確認します。追加は任意で、既存ルールや他のUFW設定は変更しません。firewalldでは確認後、`waydroid0`のみ実行中のtrusted zoneへ追加します。既存の独自zone・nftablesルールは上書きしません。
+ネットワークはDHCP・DNS・forwarding・NAT・HTTPSを確認し、必要に応じてWaydroidを再起動します。UFW有効時に必要なルールが不足している場合は、Waydroid用のDHCP・DNS・転送許可を追加するか `[y/N]` で確認します。追加は任意で、既存ルールや他のUFW設定は変更しません。firewalldでは確認後に`waydroid0`のみ実行中のtrusted zoneへ追加します。既存の独自zone・nftablesルールは上書きしません。追加したUFWルールは永続化され、`--restore`の対象外です。
 
-**非アクティブ時はAndroid sessionが停止します。** 追加したUFWルールは復元対象外です。
+**非アクティブ時はAndroid sessionが停止します。**
 
 ## 修復・復元
 
