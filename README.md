@@ -1,13 +1,19 @@
 # MLTD Waydroid Installer (MWI)
 
-CachyOS / Arch Linux / Fedora 環境で「アイドルマスター ミリオンライブ！ シアターデイズ（ミリシタ）」の動作環境を構築します。Waydroid（Android 11）および動作に必要なホストパッケージを確認し、システム更新と併せて導入します。
+CachyOS / Arch Linux / Fedora / Ubuntu 環境で「アイドルマスター ミリオンライブ！ シアターデイズ（ミリシタ）」の動作環境を構築します。Waydroid（Android 11）および動作に必要なホストパッケージを確認して導入します。
 
 ## 対応環境
 
 - x86_64
 - AMD Radeon（`amdgpu`）
-- CachyOS / Arch Linux / dnf版 Fedora
+- CachyOS / Arch Linux / dnf版 Fedora / Ubuntu（22.04・24.04・26.04 LTS）
 - Wayland
+
+Ubuntu対応処理は追加済みですが、Ubuntu実機での動作確認は未実施です。UbuntuではAPTで必要なパッケージを導入し、Waydroidの候補がない場合は確認後に公式リポジトリ（repo.waydro.id）を追加します。既存のリポジトリ設定は上書きしません。OS全体のアップグレードは実行しません。Houdini導入用Pythonはvenvを使用します。
+
+Ubuntu標準のWaylandセッションで実行してください。binderfs対応カーネルが必要です。AppArmorやUFWを全体で無効化する処理は行わず、UFWのWaydroid用例外は確認後に追加します。既存環境を修復する場合もAndroid 11が対象です。
+
+MWI導入後にMWMも使用する場合は、別途MWM側の要件を満たしてください。Ubuntu 26.04ではGamescopeのAPTパッケージを利用できますが、24.04では互換Gamescopeの事前導入が必要です。
 
 ## テスト環境
 

@@ -50,7 +50,8 @@ preflight() {
     PYTHON_BIN="$(command -v python3 || command -v python || true)"
     [[ -n "$PYTHON_BIN" ]] || die 'python3が必要です。'
     source /etc/os-release
-    case "${ID:-}" in arch|cachyos) HOST_FAMILY=arch ;; fedora) HOST_FAMILY=fedora ;; *) HOST_FAMILY=unsupported ;; esac
+    case "${ID:-}" in arch|cachyos) HOST_FAMILY=arch ;; fedora) HOST_FAMILY=fedora ;; ubuntu) HOST_FAMILY=ubuntu ;; *) HOST_FAMILY=unsupported ;; esac
+    if [[ "$HOST_FAMILY" == ubuntu ]]; then PYTHON_BIN=/usr/bin/python3; fi
     if [[ "$HOST_FAMILY" == fedora && -e /run/ostree-booted ]]; then HOST_FAMILY=unsupported; fi
     mkdir -p "$WORK_ROOT/logs" "$CACHE_DIR"
     LOG_DIR="$(mktemp -d "$WORK_ROOT/logs/$(date +%Y%m%d-%H%M%S)-XXXXXX")"
@@ -86,13 +87,19 @@ install_packages() {
     case "$HOST_FAMILY" in
         arch) packages=(waydroid mesa vulkan-radeon linux-firmware-amdgpu curl git unzip lzip python python-pip e2fsprogs iptables iproute2 util-linux) ;;
         fedora) packages=(waydroid waydroid-selinux mesa-dri-drivers mesa-vulkan-drivers amd-gpu-firmware curl-minimal git unzip lzip python3 python3-pip e2fsprogs iptables-nft iproute util-linux policycoreutils) ;;
-        *) die 'CachyOS/Archまたはdnf版Fedoraが必要です。' ;;
+        ubuntu) packages=(waydroid libgl1-mesa-dri libegl-mesa0 libgbm1 mesa-vulkan-drivers linux-firmware curl ca-certificates git unzip lzip python3 python3-pip python3-venv e2fsprogs iptables iproute2 util-linux apparmor) ;;
+        *) die 'CachyOS/Arch、Ubuntu、またはdnf版Fedoraが必要です。' ;;
     esac
+    if [[ "$HOST_FAMILY" == ubuntu ]]; then
+        prepare_ubuntu_repository
+    fi
     local -a missing=()
     local p
     for p in "${packages[@]}"; do
         if [[ "$HOST_FAMILY" == arch ]]; then
             pacman -Q "$p" >/dev/null 2>&1 || missing+=("$p")
+        elif [[ "$HOST_FAMILY" == ubuntu ]]; then
+            ubuntu_package_installed "$p" || missing+=("$p")
         else
             if [[ "$p" == curl-minimal ]] && command -v curl >/dev/null; then continue; fi
             rpm -q "$p" >/dev/null 2>&1 || missing+=("$p")
@@ -100,9 +107,15 @@ install_packages() {
     done
     if (( ${#missing[@]} )); then
         printf '不足: %s\n' "${missing[*]}"
-        confirm 'システム全体を更新して不足パッケージを導入しますか' || die 'パッケージ導入を中止しました。'
+        if [[ "$HOST_FAMILY" == ubuntu ]]; then
+            confirm '不足パッケージをAPTで導入しますか（OS全体のアップグレードは行いません）' || die 'パッケージ導入を中止しました。'
+        else
+            confirm 'システム全体を更新して不足パッケージを導入しますか' || die 'パッケージ導入を中止しました。'
+        fi
         if [[ "$HOST_FAMILY" == arch ]]; then
             sudo pacman -Syu --needed "${missing[@]}"
+        elif [[ "$HOST_FAMILY" == ubuntu ]]; then
+            sudo apt-get install -y "${missing[@]}"
         else
             sudo dnf upgrade --refresh
             sudo dnf install "${missing[@]}"
@@ -493,7 +506,7 @@ lifecycle_main() {
         else MODE=install; fi
     fi
     if [[ "$MODE" == diagnose ]]; then collect_logs; return 0; fi
-    [[ "$HOST_FAMILY" == arch || "$HOST_FAMILY" == fedora ]] || die '変更操作はCachyOS/Archとdnf版Fedoraに対応します。rpm-ostree版は対象外です。'
+    [[ "$HOST_FAMILY" == arch || "$HOST_FAMILY" == fedora || "$HOST_FAMILY" == ubuntu ]] || die '変更操作はCachyOS/Arch、Ubuntu、dnf版Fedoraに対応します。rpm-ostree版は対象外です。'
     [[ "${XDG_SESSION_TYPE:-}" == wayland ]] || die 'Waylandにログインしてから実行してください。'
     if [[ "$MODE" == restore ]]; then
         state_tool inspect-backup "$BACKUP" "$UID"
