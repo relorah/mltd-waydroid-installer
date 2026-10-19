@@ -20,10 +20,10 @@ CachyOSでの実行実績があります。Ubuntu 26.04は実機でread-only診�
 ## 使い方
 
 x86_64・AMD GPU・Wayland・binderfs対応カーネル・sudo権限が必要です。
-配布ZIP `MWI_0.32.zip` を展開し、`MWI_0.32/` 内で通常ユーザーとして実行します（ディレクトリ名は `MWI_[ver]` 形式）。
+配布ZIP `MWI_v0.32.zip` を展開し、`MWI_v0.32/` 内で通常ユーザーとして実行します（ディレクトリ名は `MWI_v[ver]` 形式）。
 
 ```bash
-cd MWI_0.32
+cd MWI_v0.32
 chmod +x install.sh
 ./install.sh
 ```
@@ -33,7 +33,7 @@ chmod +x install.sh
 
 ## 配布ZIPの生成
 
-リポジトリ内で `python3 tools/build_zip.py` を実行すると、READMEの版番号に合わせた `dist/MWI_0.32.zip` を生成します。ZIP内のトップディレクトリは `MWI_0.32/` です。GitHubの自動生成ソースZIPはこの配布ZIPとは異なります。
+リポジトリ内で `python3 tools/build_zip.py` を実行すると、READMEの版番号に合わせた `dist/MWI_v0.32.zip` を生成します。ZIP内のトップディレクトリは `MWI_v0.32/` です。GitHubの自動生成ソースZIPはこの配布ZIPとは異なります。
 
 ## 導入内容
 
