@@ -13,7 +13,7 @@ def main():
                         (root / "README.md").read_text(encoding="utf-8"), re.MULTILINE)
     if version is None:
         raise SystemExit("README version not found")
-    name = f"MWI_{version.group(1)}"
+    name = f"MWI_v{version.group(1)}"
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=root / "dist")
     args = parser.parse_args()
