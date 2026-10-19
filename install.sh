@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-# MWI 0.2.5: diagnose, repair and install for Arch/Fedora/Ubuntu AMD desktops.
+# MWI 0.32: diagnose, repair and install for CachyOS/Arch/Fedora/Ubuntu 26.04 AMD desktops.
 # Houdini is obtained by casualsnek/waydroid_script at setup time. It is not
 # bundled or redistributed by this repository.
 
@@ -36,6 +36,5 @@ check_amd() {
     ok 'amdgpuとDRM render nodeを確認しました。'
 }
 
-source "$SCRIPT_DIR/lib/ubuntu.sh"
 source "$SCRIPT_DIR/lib/lifecycle.sh"
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then lifecycle_main "$@"; fi

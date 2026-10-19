@@ -9,13 +9,10 @@ from pathlib import Path
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    version = re.search(
-        r"^# MWI ([0-9]+\.[0-9]+\.[0-9]+):",
-        (root / "install.sh").read_text(encoding="utf-8"),
-        re.MULTILINE,
-    )
+    version = re.search(r"^# Mirishita Waydroid Installer \(MWI\) ([0-9]+\.[0-9]+(?:\.[0-9]+)?)\s*$",
+                        (root / "README.md").read_text(encoding="utf-8"), re.MULTILINE)
     if version is None:
-        raise SystemExit("install.sh version not found")
+        raise SystemExit("README version not found")
     name = f"MWI_{version.group(1)}"
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=root / "dist")

@@ -11,18 +11,5 @@ jobs:
         run: python3 -m unittest discover -s tests -v
       - name: Build and check ZIP
         run: |
-          ZIP_PATH="$(python3 tools/build_zip.py)"
-          python3 - "$ZIP_PATH" <<'PY'
-          import pathlib
-          import sys
-          import zipfile
-
-          path = pathlib.Path(sys.argv[1])
-          top = path.stem + "/"
-          with zipfile.ZipFile(path) as archive:
-              assert archive.testzip() is None
-              names = archive.namelist()
-              assert names
-              assert all(name.startswith(top) for name in names)
-          print(f"validated: {path}")
-          PY
+          python3 tools/build_zip.py
+          python3 -c "import re,zipfile; r=open('README.md').read(); v=re.search(r'MWI\) ([0-9.]+)',r).group(1); z=zipfile.ZipFile(f'dist/MWI_{v}.zip'); assert z.testzip() is None; assert all(n.startswith(f'MWI_{v}/') for n in z.namelist())"

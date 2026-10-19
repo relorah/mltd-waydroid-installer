@@ -298,9 +298,24 @@ def extract_image(archive, target):
         fd, tmp = tempfile.mkstemp(prefix='.mwi-image-', dir=target.parent)
         try:
             with z.open(infos[0]) as source, os.fdopen(fd, 'wb') as out:
-                shutil.copyfileobj(source, out, 1024 * 1024)
+                total = infos[0].file_size
+                copied = 0
+                last = -1
+                print(f'{target.name}: 展開開始 ({total / 1048576:.0f} MiB)', file=sys.stderr, flush=True)
+                while True:
+                    chunk = source.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    out.write(chunk)
+                    copied += len(chunk)
+                    percent = min(99, copied * 100 // total)
+                    if percent // 5 != last:
+                        last = percent // 5
+                        filled = percent // 5
+                        print(f'{target.name}: [{"#" * filled}{"-" * (20 - filled)}] {percent:3d}% ({copied / 1048576:.0f}/{total / 1048576:.0f} MiB)', file=sys.stderr, flush=True)
             os.chmod(tmp, 0o644)
             os.replace(tmp, target)
+            print(f'{target.name}: [####################] 100% 配置完了', file=sys.stderr, flush=True)
         finally:
             if os.path.exists(tmp):
                 os.unlink(tmp)

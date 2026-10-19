@@ -43,6 +43,80 @@ on_exit() {
 phase() { STAGE="$1"; msg "$STAGE"; shift; "$@"; }
 prop() { timeout 8 sudo waydroid shell -- getprop "$1" 2>/dev/null | tr -d '\r' || true; }
 state_tool() { sudo "$PYTHON_BIN" "$SCRIPT_DIR/lib/state.py" "$@"; }
+detect_host() {
+    case "${ID:-}" in
+        arch|cachyos) HOST_FAMILY=arch ;;
+        fedora) HOST_FAMILY=fedora ;;
+        ubuntu) HOST_FAMILY=unsupported
+            [[ "${VERSION_ID:-}" != 26.04 ]] || HOST_FAMILY=ubuntu ;;
+        *) HOST_FAMILY=unsupported ;;
+    esac
+}
+module_directory() {
+    local root
+    for root in /lib/modules /usr/lib/modules; do
+        if [[ -d "$root/$(uname -r)" ]]; then printf '%s\n' "$root/$(uname -r)"; return 0; fi
+    done
+    return 1
+}
+check_kernel() {
+    local module
+    module_directory || warn '実行中カーネルのmodulesディレクトリなし。組込み機能を確認します。'
+    if [[ "$MODE" != dry-run ]]; then
+        for module in binder_linux veth bridge; do sudo modprobe "$module" >/dev/null 2>&1 || true; done
+    fi
+    grep -qw binder /proc/filesystems || die 'binderfs未確認。PS5カーネルは自動交換しません。'
+    for module in veth bridge; do
+        [[ -d "/sys/module/$module" ]] || die "$module 未確認。組込みの場合はカーネル設定と実動作を別途確認してください。"
+    done
+    local mounts
+    mounts="$(findmnt -rn -t binder -o TARGET,OPTIONS || true)"
+    printf '%s\n' "$mounts"
+    if grep -qE '(^|[,[:space:]])(ro|nodev)(,|$)' <<<"$mounts"; then
+        warn 'binderfsにro/nodevがあります。この名前空間からAndroid用デバイスを利用できるか未確認です。通常のホスト端末でも確認してください。'
+    fi
+    [[ -n "$mounts" ]] || warn 'binderfsは未マウントです。Waydroid起動時のマウントを確認してください。'
+}
+ubuntu_packages() {
+    packages=(waydroid curl ca-certificates git unzip lzip python3 python3-pip python3-venv e2fsprogs iptables iproute2 util-linux kmod lxc dnsmasq-base nftables)
+}
+ubuntu_missing() {
+    local p status
+    missing=()
+    for p in "${packages[@]}"; do
+        status="$(dpkg-query -W -f='${Status}' "$p" 2>/dev/null || true)"
+        [[ "$status" == 'install ok installed' ]] || missing+=("$p")
+    done
+    return 0
+}
+ubuntu_plan() {
+    local -a packages=() missing=()
+    ubuntu_packages
+    ubuntu_missing
+    if (( ${#missing[@]} == 0 )); then msg 'Ubuntu依存パッケージ: 導入済み'; return 0; fi
+    printf 'Ubuntu不足: %s\n' "${missing[*]}"
+    # No repository bootstrap, release substitution, upgrade, or autoremove.
+    env LC_ALL=C apt-get --simulate --no-remove --no-upgrade --no-install-recommends install "${missing[@]}" >"$LOG_DIR/apt-plan.txt" || {
+        cat "$LOG_DIR/apt-plan.txt"
+        die 'APT解決失敗。設定済み配布元とwaydroid候補を apt-cache policy waydroid で確認してください。リポジトリは自動追加しません。'
+    }
+    cat "$LOG_DIR/apt-plan.txt"
+    "$PYTHON_BIN" "$SCRIPT_DIR/lib/apt_guard.py" --plan <"$LOG_DIR/apt-plan.txt" || die 'カーネル・Mesa・firmware変更または削除を含むため停止しました。'
+}
+dry_run() {
+    source /etc/os-release
+    detect_host
+    PYTHON_BIN="$(command -v python3)"
+    mkdir -p "$WORK_ROOT/logs"
+    LOG_DIR="$(mktemp -d "$WORK_ROOT/logs/dry-run-XXXXXX")"
+    exec > >(tee -a "$LOG_DIR/dry-run.txt") 2>&1
+    printf 'OS=%s %s family=%s kernel=%s session=%s\n' "${ID:-}" "${VERSION_ID:-}" "$HOST_FAMILY" "$(uname -r)" "${XDG_SESSION_TYPE:-unknown}"
+    [[ "$HOST_FAMILY" == ubuntu ]] || die '--dry-run のAPT診断はUbuntu 26.04専用です。'
+    # Only reads host state and writes user-owned logs. No sudo or module loads.
+    check_kernel
+    ubuntu_plan
+    printf '診断完了（導入・サービス操作なし）。ログ: %s\n' "$LOG_DIR"
+}
 preflight() {
     [[ $EUID -ne 0 ]] || die 'sudoを付けず通常ユーザーで実行してください。'
     [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || die 'Linux x86_64が必要です。'
@@ -50,8 +124,7 @@ preflight() {
     PYTHON_BIN="$(command -v python3 || command -v python || true)"
     [[ -n "$PYTHON_BIN" ]] || die 'python3が必要です。'
     source /etc/os-release
-    case "${ID:-}" in arch|cachyos) HOST_FAMILY=arch ;; fedora) HOST_FAMILY=fedora ;; ubuntu) HOST_FAMILY=ubuntu ;; *) HOST_FAMILY=unsupported ;; esac
-    if [[ "$HOST_FAMILY" == ubuntu ]]; then PYTHON_BIN=/usr/bin/python3; fi
+    detect_host
     if [[ "$HOST_FAMILY" == fedora && -e /run/ostree-booted ]]; then HOST_FAMILY=unsupported; fi
     mkdir -p "$WORK_ROOT/logs" "$CACHE_DIR"
     LOG_DIR="$(mktemp -d "$WORK_ROOT/logs/$(date +%Y%m%d-%H%M%S)-XXXXXX")"
@@ -87,19 +160,16 @@ install_packages() {
     case "$HOST_FAMILY" in
         arch) packages=(waydroid mesa vulkan-radeon linux-firmware-amdgpu curl git unzip lzip python python-pip e2fsprogs iptables iproute2 util-linux) ;;
         fedora) packages=(waydroid waydroid-selinux mesa-dri-drivers mesa-vulkan-drivers amd-gpu-firmware curl-minimal git unzip lzip python3 python3-pip e2fsprogs iptables-nft iproute util-linux policycoreutils) ;;
-        ubuntu) packages=(waydroid libgl1-mesa-dri libegl-mesa0 libgbm1 mesa-vulkan-drivers linux-firmware curl ca-certificates git unzip lzip python3 python3-pip python3-venv e2fsprogs iptables iproute2 util-linux apparmor) ;;
-        *) die 'CachyOS/Arch、Ubuntu、またはdnf版Fedoraが必要です。' ;;
+        ubuntu) ubuntu_packages ;;
+        *) die 'CachyOS/Arch、dnf版Fedora、Ubuntu 26.04が必要です。' ;;
     esac
-    if [[ "$HOST_FAMILY" == ubuntu ]]; then
-        prepare_ubuntu_repository
-    fi
     local -a missing=()
     local p
     for p in "${packages[@]}"; do
         if [[ "$HOST_FAMILY" == arch ]]; then
             pacman -Q "$p" >/dev/null 2>&1 || missing+=("$p")
         elif [[ "$HOST_FAMILY" == ubuntu ]]; then
-            ubuntu_package_installed "$p" || missing+=("$p")
+            [[ "$(dpkg-query -W -f='${Status}' "$p" 2>/dev/null || true)" == 'install ok installed' ]] || missing+=("$p")
         else
             if [[ "$p" == curl-minimal ]] && command -v curl >/dev/null; then continue; fi
             rpm -q "$p" >/dev/null 2>&1 || missing+=("$p")
@@ -108,23 +178,54 @@ install_packages() {
     if (( ${#missing[@]} )); then
         printf '不足: %s\n' "${missing[*]}"
         if [[ "$HOST_FAMILY" == ubuntu ]]; then
-            confirm '不足パッケージをAPTで導入しますか（OS全体のアップグレードは行いません）' || die 'パッケージ導入を中止しました。'
+            confirm 'APT索引を更新し、不足パッケージのみ導入しますか（カーネル・Mesa変更は禁止）' || die 'パッケージ導入を中止しました。'
         else
             confirm 'システム全体を更新して不足パッケージを導入しますか' || die 'パッケージ導入を中止しました。'
         fi
         if [[ "$HOST_FAMILY" == arch ]]; then
             sudo pacman -Syu --needed "${missing[@]}"
         elif [[ "$HOST_FAMILY" == ubuntu ]]; then
-            sudo apt-get install -y "${missing[@]}"
+            sudo apt-get update
+            ubuntu_plan
+            # Hook checks the actual downloaded debs before dpkg, including
+            # dependency changes after simulation. --no-remove rejects removals.
+            local guard
+            guard="$(sudo mktemp -d /run/mwi-apt-XXXXXXXX)"
+            sudo install -m 0755 "$SCRIPT_DIR/lib/apt_guard.py" "$guard/guard.py"
+            if ! sudo apt-get --no-remove --no-upgrade --no-install-recommends \
+                -o "DPkg::Pre-Install-Pkgs::=/usr/bin/python3 $guard/guard.py" \
+                install "${missing[@]}"; then
+                sudo rm -f -- "$guard/guard.py"; sudo rmdir -- "$guard"
+                die 'APT導入失敗。Waydroidイメージ変更前に停止しました。'
+            fi
+            sudo rm -f -- "$guard/guard.py"; sudo rmdir -- "$guard"
         else
             sudo dnf upgrade --refresh
             sudo dnf install "${missing[@]}"
         fi
     fi
-    [[ -d "/usr/lib/modules/$(uname -r)" ]] || die '実行中カーネルのモジュールがありません。再起動後に再実行してください。'
-    sudo modprobe binder_linux >/dev/null 2>&1 || true
-    grep -qw binder /proc/filesystems || die 'binderfsを確認できません。Waydroid対応カーネルを確認してください。'
+    check_kernel
+    prepare_ubuntu_network
     check_amd
+}
+prepare_ubuntu_network() {
+    [[ "$HOST_FAMILY" == ubuntu ]] || return 0
+    local script=/usr/lib/waydroid/data/scripts/waydroid-net.sh
+    [[ -f "$script" ]] || die 'Waydroidネットワークスクリプトがありません。'
+    if grep -qx 'LXC_USE_NFT="true"' "$script"; then
+        sudo nft list ruleset >/dev/null || die 'Waydroidのnftables設定は有効ですがnftを利用できません。'
+        return 0
+    fi
+    # Waydroid prefers legacy explicitly, regardless of update-alternatives.
+    if command -v iptables-legacy >/dev/null &&
+        sudo iptables-legacy -w 3 -t filter -S >/dev/null 2>&1 &&
+        sudo iptables-legacy -w 3 -t nat -S >/dev/null 2>&1 &&
+        sudo iptables-legacy -w 3 -t mangle -S >/dev/null 2>&1; then return 0; fi
+    sudo nft list ruleset >/dev/null || die 'legacy iptablesとnftablesが利用できません。削除・初期化前に停止しました。'
+    warn 'legacy iptablesが利用できないため、Waydroid内蔵nftables方式に変更します。元スクリプトを同じディレクトリに退避します。'
+    # Stop with the old backend, then change only the known backend selector.
+    stop_waydroid
+    sudo "$PYTHON_BIN" "$SCRIPT_DIR/lib/waydroid_nft.py"
 }
 restore_selinux_contexts() {
     [[ "$HOST_FAMILY" == fedora ]] || return 0
@@ -213,10 +314,34 @@ start_waydroid() {
     sudo systemctl enable --now waydroid-container.service
     (waydroid session start >>"$LOG_DIR/session.txt" 2>&1 9>&- &)
 }
+run_with_activity() {
+    local label=$1 pid started=$SECONDS rc=0
+    shift
+    printf '%s: 開始（処理量は取得できないため経過時間を表示）\n' "$label"
+    "$@" &
+    pid=$!
+    while kill -0 "$pid" 2>/dev/null; do
+        printf '%s: 処理中 ... %s秒経過\n' "$label" "$((SECONDS - started))"
+        sleep 2
+    done
+    wait "$pid" || rc=$?
+    if (( rc != 0 )); then
+        printf '%s: 失敗 (終了コード=%s)\n' "$label" "$rc" >&2
+        return "$rc"
+    fi
+    printf '%s: 完了 (%s秒)\n' "$label" "$((SECONDS - started))"
+}
 wait_android() {
-    local deadline=$((SECONDS + 120))
+    local deadline=$((SECONDS + 120)) started=$SECONDS next_report=0
     while (( SECONDS < deadline )); do
-        [[ "$(prop sys.boot_completed)" != 1 ]] || return 0
+        if [[ "$(prop sys.boot_completed)" == 1 ]]; then
+            printf 'Android起動: 完了 (%s秒)\n' "$((SECONDS - started))"
+            return 0
+        fi
+        if (( SECONDS >= next_report )); then
+            printf 'Android起動待ち: %s秒経過 / 待機上限120秒（進捗率ではありません）\n' "$((SECONDS - started))"
+            next_report=$((SECONDS + 5))
+        fi
         sudo systemctl is-active --quiet waydroid-container.service || die 'Waydroidサービスが起動後に停止しました。'
         sleep 1
     done
@@ -314,8 +439,11 @@ android_dns_test() {
 }
 network_nat_present() {
     local ipt
-    ipt="$(command -v iptables-legacy || command -v iptables || true)"
-    if [[ -n "$ipt" ]] && sudo "$ipt" -w 3 -t nat -C POSTROUTING -s 192.168.240.0/24 '!' -d 192.168.240.0/24 -j MASQUERADE >/dev/null 2>&1; then return 0; fi
+    # Ubuntu may have both frontends installed. Inspect both without changing
+    # update-alternatives or assuming legacy is the active Waydroid backend.
+    for ipt in iptables iptables-nft iptables-legacy; do
+        if command -v "$ipt" >/dev/null && sudo "$ipt" -w 3 -t nat -C POSTROUTING -s 192.168.240.0/24 '!' -d 192.168.240.0/24 -j MASQUERADE >/dev/null 2>&1; then return 0; fi
+    done
     # Arch can use Waydroid's native nft backend. Read its dedicated NAT chain.
     sudo nft list chain ip lxc postrouting 2>/dev/null | grep -qE 'ip saddr 192\.168\.240\.0/24 ip daddr != 192\.168\.240\.0/24.*masquerade'
 }
@@ -426,11 +554,14 @@ install_android11() {
     download "$SYSTEM_URL" "$CACHE_DIR/$SYSTEM_ZIP"
     download "$VENDOR_URL" "$CACHE_DIR/$VENDOR_ZIP"
     sudo install -d -m 0755 "$IMAGE_DIR"
+    msg 'system.img 展開・配置'
     state_tool extract-image "$CACHE_DIR/$SYSTEM_ZIP" "$IMAGE_DIR/system.img"
+    msg 'vendor.img 展開・配置'
     state_tool extract-image "$CACHE_DIR/$VENDOR_ZIP" "$IMAGE_DIR/vendor.img"
     restore_selinux_contexts
+    msg 'イメージSHA-256計算中（大きいイメージでは時間がかかります）'
     sha256sum "$CACHE_DIR/$SYSTEM_ZIP" "$CACHE_DIR/$VENDOR_ZIP" >"$LOG_DIR/images-SHA256SUMS"
-    sudo waydroid init -f -i "$IMAGE_DIR" -s GAPPS
+    run_with_activity 'Waydroid初期化' sudo waydroid init -f -i "$IMAGE_DIR" -s GAPPS
     boot_android11
     # Record the first Android 11 boot before Houdini or libnb,
     # or the later `waydroid upgrade -o` call. Comparing this with final checks
@@ -488,12 +619,14 @@ verify_runtime() {
 lifecycle_main() {
     case "${1:-}" in
         '') [[ "${RESET_WAYDROID:-0}" != 1 ]] || MODE=reset ;;
+        --dry-run) MODE=dry-run ;;
         --diagnose) MODE=diagnose ;; --install) MODE=install ;; --reset) MODE=reset ;; --reinstall) MODE=reinstall ;;
         --repair|--repair-bridge) MODE=repair ;; --restore) MODE=restore; BACKUP="${2:-}"; [[ -n "$BACKUP" ]] || die '復元パスが必要です。' ;;
-        --help|-h) printf 'MWI 0.2.5\n--diagnose / --install / --repair / --reset / --reinstall / --restore BACKUP\n'; return ;;
+        --help|-h) printf 'MWI 0.32\n--dry-run / --diagnose / --install / --repair / --reset / --reinstall / --restore BACKUP\n'; return ;;
         *) die '不明な引数です。--help を参照してください。' ;;
     esac
     if [[ "$MODE" == restore ]]; then [[ $# == 2 ]] || die '引数が不正です。'; else [[ $# -le 1 ]] || die '引数が多すぎます。'; fi
+    if [[ "$MODE" == dry-run ]]; then dry_run; return; fi
     preflight
     diagnose
     if [[ "$MODE" == auto ]]; then
@@ -506,7 +639,7 @@ lifecycle_main() {
         else MODE=install; fi
     fi
     if [[ "$MODE" == diagnose ]]; then collect_logs; return 0; fi
-    [[ "$HOST_FAMILY" == arch || "$HOST_FAMILY" == fedora || "$HOST_FAMILY" == ubuntu ]] || die '変更操作はCachyOS/Arch、Ubuntu、dnf版Fedoraに対応します。rpm-ostree版は対象外です。'
+    [[ "$HOST_FAMILY" == arch || "$HOST_FAMILY" == fedora || "$HOST_FAMILY" == ubuntu ]] || die '変更操作はCachyOS/Arch、dnf版Fedora、Ubuntu 26.04に対応します。'
     [[ "${XDG_SESSION_TYPE:-}" == wayland ]] || die 'Waylandにログインしてから実行してください。'
     if [[ "$MODE" == restore ]]; then
         state_tool inspect-backup "$BACKUP" "$UID"
