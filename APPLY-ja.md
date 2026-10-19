@@ -5,15 +5,15 @@
 
 ## 推奨: 別フォルダで使用
 
-ZIPとMWI_0.32-SHA256SUMS.txtを同じフォルダに置き、通常ユーザーのホスト端末で実行します。
+ZIPとMWI_v0.32.zip.sha256を同じフォルダに置き、通常ユーザーのホスト端末で実行します。
 以下の最初のcdはダウンロード先に合わせてください。
 
 ```bash
 cd ~/Downloads
-sha256sum -c MWI_0.32-SHA256SUMS.txt
+sha256sum -c MWI_v0.32.zip.sha256
 mkdir -p ~/Desktop/MWI-Ubuntu-review
-unzip -n MWI_0.32.zip -d ~/Desktop/MWI-Ubuntu-review
-cd ~/Desktop/MWI-Ubuntu-review/MWI_0.32
+unzip -n MWI_v0.32.zip -d ~/Desktop/MWI-Ubuntu-review
+cd ~/Desktop/MWI-Ubuntu-review/MWI_v0.32
 bash -n install.sh
 bash -n lib/lifecycle.sh
 python3 -m unittest discover -s tests -v
