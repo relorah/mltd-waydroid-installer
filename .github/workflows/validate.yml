@@ -12,4 +12,4 @@ jobs:
       - name: Build and check ZIP
         run: |
           python3 tools/build_zip.py
-          python3 -c "import re,zipfile; r=open('README.md').read(); v=re.search(r'MWI\) ([0-9.]+)',r).group(1); z=zipfile.ZipFile(f'dist/MWI_{v}.zip'); assert z.testzip() is None; assert all(n.startswith(f'MWI_{v}/') for n in z.namelist())"
+          python3 -c "import re,zipfile; r=open('README.md').read(); v=re.search(r'MWI\) ([0-9.]+)',r).group(1); z=zipfile.ZipFile(f'dist/MWI_v{v}.zip'); assert z.testzip() is None; assert all(n.startswith(f'MWI_v{v}/') for n in z.namelist())"
