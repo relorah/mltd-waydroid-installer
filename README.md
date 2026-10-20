@@ -1,4 +1,4 @@
-# Mirishita Waydroid Installer (MWI) 0.32
+# Mirishita Waydroid Installer (MWI)
 
 CachyOS / Arch Linux / Fedora / Ubuntu 26.04 + Waydroid Android 11環境で「アイドルマスター ミリオンライブ！ シアターデイズ（ミリシタ）」の動作環境を構築します。
 
@@ -7,7 +7,7 @@ CachyOS / Arch Linux / Fedora / Ubuntu 26.04 + Waydroid Android 11環境で「�
 - x86_64、AMD Radeon（`amdgpu`）
 - CachyOS / Arch Linux
 - dnf版Fedora（KDE Plasmaを含む、実機未検証。Kinoiteなどrpm-ostree版は対象外）
-- Ubuntu 26.04 / PS5 Linux Kernel 7.1.7
+- Ubuntu 26.04 LTS / PS5 Linux Kernel 7.1.7
 - Wayland
 
 ## テスト環境
@@ -42,7 +42,8 @@ chmod +x install.sh
 - `./install.sh --reinstall`：上書き再インストール。既存Waydroid・現在ユーザーのゲーム／ログインデータ・指定イメージを削除し、Android 11 GAPPS + Houdini + libnbを再導入
 - `./install.sh --restore BACKUP`：修復前の設定・overlayを復元
 
-**上書き再インストール（4 / `--reinstall`）は退避せず削除します。** 削除対象は `/var/lib/waydroid`、現在ユーザーのWaydroidデータ（通常 `~/.local/share/waydroid`）、`/etc/waydroid-extra/images` です。削除前に `[y/N]` で確認し、両イメージのダウンロード・ZIP検査に成功してから停止・削除します。**削除した環境は `--restore` では戻せません。**
+**上書き再インストール（4 / `--reinstall`）は退避せず削除します。** 削除対象は `/var/lib/waydroid`、現在ユーザーのWaydroidデータ（通常 `~/.local/share/waydroid`）、`/etc/waydroid-extra/images` です。**削除した環境は `--restore` では戻せません。**
+
 バックアップは`/var/lib/mwi/backups/`、ログは通常`~/.local/state/mwi/logs/`に保存します。
 
 ## 出典・謝辞
