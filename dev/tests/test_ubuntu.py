@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('apt_guard', ROOT / 'lib/apt_guard.py')
 guard = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(guard)

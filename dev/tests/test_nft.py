@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-spec = importlib.util.spec_from_file_location('nft_fix', Path(__file__).resolve().parents[1] / 'lib/waydroid_nft.py')
+spec = importlib.util.spec_from_file_location('nft_fix', Path(__file__).resolve().parents[2] / 'lib/waydroid_nft.py')
 fix = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fix)
 

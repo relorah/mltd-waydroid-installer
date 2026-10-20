@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package tracked working-tree files beneath MWI_[version]/."""
+"""Package tracked runtime files beneath MWI_v[version]/."""
 import argparse
 import re
 import subprocess
@@ -29,6 +29,8 @@ def main():
             mode, _, stage = metadata.split()
             if stage != "0" or mode not in ("100644", "100755"):
                 raise SystemExit(f"Unsupported Git entry: {relative}")
+            if relative not in {"README.md", "LICENSE", "install.sh"} and not relative.startswith("lib/"):
+                continue
             info = zipfile.ZipInfo(f"{name}/{relative}")
             info.create_system = 3
             info.external_attr = int(mode, 8) << 16

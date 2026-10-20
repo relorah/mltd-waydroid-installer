@@ -15,8 +15,8 @@ readonly WAYDROID_SCRIPT_COMMIT='48dbfaf34a6ddbe78688c530f9ba1c26522aafb2'
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
-readonly LIBNB32="$SCRIPT_DIR/test_nb/lib/libnb.so"
-readonly LIBNB64="$SCRIPT_DIR/test_nb/lib64/libnb.so"
+readonly LIBNB32="$SCRIPT_DIR/lib/test_nb/lib/libnb.so"
+readonly LIBNB64="$SCRIPT_DIR/lib/test_nb/lib64/libnb.so"
 readonly WORK_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/mwi"
 readonly CACHE_DIR="$WORK_ROOT/cache"
 readonly IMAGE_DIR='/etc/waydroid-extra/images'

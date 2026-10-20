@@ -126,7 +126,7 @@ def android_release_offline():
 
 def check_libnb(root):
     for relative, expected in LIBNB.items():
-        src = Path(root) / 'test_nb' / relative.removeprefix('system/')
+        src = Path(root) / 'lib' / 'test_nb' / relative.removeprefix('system/')
         if digest(src) != expected:
             raise ValueError(f'同梱libnb破損: {relative}')
     print('同梱libnb: SHA-256一致')

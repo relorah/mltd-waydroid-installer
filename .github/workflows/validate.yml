@@ -8,8 +8,8 @@ jobs:
       - name: Bash syntax
         run: bash -n install.sh && bash -n lib/lifecycle.sh
       - name: Python and UFW branch tests
-        run: python3 -m unittest discover -s tests -v
+        run: python3 -m unittest discover -s dev/tests -v
       - name: Build and check ZIP
         run: |
-          python3 tools/build_zip.py
+          python3 dev/build_zip.py
           python3 -c "import re,zipfile; r=open('README.md').read(); v=re.search(r'MWI\) ([0-9.]+)',r).group(1); z=zipfile.ZipFile(f'dist/MWI_v{v}.zip'); assert z.testzip() is None; assert all(n.startswith(f'MWI_v{v}/') for n in z.namelist())"

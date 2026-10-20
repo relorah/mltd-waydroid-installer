@@ -7,7 +7,7 @@ import tempfile
 import unittest
 import zipfile
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('state_progress', ROOT / 'lib/state.py')
 state = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(state)
