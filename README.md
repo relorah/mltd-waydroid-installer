@@ -21,7 +21,6 @@ CachyOSおよびUbuntuにて動作確認済み。Fedoraは実機未確認です�
 ## 使い方
 
 ```bash
-cd MWI_v0.32
 chmod +x install.sh
 ./install.sh
 ```
@@ -49,4 +48,4 @@ chmod +x install.sh
 ## 出典・謝辞
 
 [mogareta7731氏](https://zenn.dev/mogareta7731/articles/94204fa83b239b)が配布したAndroid-x86 ISOに同梱されていたパッチ済み`test_nb`を、バイナリ・LICENSEとも無改変で使用しています。元プロジェクトは[qwerty12356-wart氏のtest_libnb](https://github.com/qwerty12356-wart/test_libnb)、BSD 2-Clauseです。MWI本体はMIT Licenseです。
-両氏および[Waydroid](https://github.com/waydroid/waydroid)・[waydroid_script](https://github.com/casualsnek/waydroid_script)の作者に心より感謝します。
+両氏および[Waydroid](https://github.com/waydroid/waydroid)・[waydroid_script](https://github.com/casualsnek/waydroid_script)の作者に感謝します。
