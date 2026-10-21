@@ -33,6 +33,8 @@ chmod +x install.sh
 
 ネットワーク接続を確認し、必要に応じてWaydroidを再起動します。UFW・firewalldの例外追加は事前確認し、Waydroidに必要な範囲だけを対象とします。既存設定の上書きやルールの重複追加は行いません。UFWへの追加は永続、firewalldへの追加は再起動まで有効です。
 
+ミリシタの正常動作を確認した後、高解像度描画や表示・入力設定を調整する場合は、[MLTD Waydroid Manager（MWM）](https://github.com/relorah/mltd-waydroid-manager)が利用できます。
+
 ## 修復・復元
 
 - `./install.sh --diagnose`：診断
