@@ -668,7 +668,7 @@ lifecycle_main() {
         return
     fi
     if [[ "$MODE" == install ]]; then
-        if sudo test -d /var/lib/waydroid || [[ -e "$USER_DATA" ]] || sudo test -e "$IMAGE_DIR/system.img" || sudo test -e "$IMAGE_DIR/vendor.img"; then die '既存環境があります。--repair / --reset / --reinstall を選んでください。'; fi
+        if has_existing_waydroid_state; then die '既存環境があります。--repair / --reset / --reinstall を選んでください。'; fi
     elif [[ "$MODE" == repair ]]; then
         sudo test -f /var/lib/waydroid/waydroid.cfg || die '設定がありません。--reset で退避して再導入、または --reinstall でデータも初期化して再導入してください。'
         phase '既存Android版確認' require_existing_android11
