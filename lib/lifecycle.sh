@@ -616,6 +616,22 @@ verify_runtime() {
     network_check_and_repair
     systemctl --user is-active pipewire-pulse.socket pipewire-pulse.service >"$LOG_DIR/audio.txt" 2>&1 || warn '音声サービスは未確認です。実際の音声を確認してください。'
 }
+has_existing_waydroid_state() {
+    local state_dir="${1:-/var/lib/waydroid}"
+    local user_data="${2:-$USER_DATA}"
+    local image_dir="${3:-$IMAGE_DIR}"
+    local marker
+
+    # An empty directory can be created by the Waydroid package before init.
+    # Preserve user data, initialized configs, images, and interrupted installs.
+    [[ -e "$user_data" ]] && return 0
+    for marker in "$state_dir/waydroid.cfg" "$image_dir/system.img" "$image_dir/vendor.img"; do
+        sudo test -e "$marker" && return 0
+    done
+    sudo test -d "$state_dir" || return 1
+    [[ -n "$(sudo find "$state_dir" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]
+}
+
 lifecycle_main() {
     case "${1:-}" in
         '') [[ "${RESET_WAYDROID:-0}" != 1 ]] || MODE=reset ;;
@@ -630,7 +646,7 @@ lifecycle_main() {
     preflight
     diagnose
     if [[ "$MODE" == auto ]]; then
-        if sudo test -d /var/lib/waydroid || [[ -e "$USER_DATA" ]] || sudo test -e "$IMAGE_DIR/system.img" || sudo test -e "$IMAGE_DIR/vendor.img"; then
+        if has_existing_waydroid_state; then
             local answer
             [[ -t 0 ]] || die '既存環境があります。--diagnose または修復モードを指定してください。'
             printf '\n1: 診断のみ / 2: Houdini・libnb修復 / 3: 全環境退避して新規 / 4: 上書き再インストール（データも初期化） / 0: 終了\n選択: '

@@ -60,6 +60,23 @@ class UbuntuTests(unittest.TestCase):
         result = self.shell('uname() { echo test; }; module_directory')
         self.assertNotEqual(result.returncode, 0)
 
+    def test_empty_waydroid_directory_is_fresh_but_partial_state_is_preserved(self):
+        body = (
+            'tmp=$(mktemp -d); mkdir -p "$tmp/state"; '
+            'sudo() { "$@"; }; '
+            'if has_existing_waydroid_state "$tmp/state" "$tmp/user" "$tmp/images"; '
+            'then echo existing; else echo fresh; fi; '
+            'touch "$tmp/state/waydroid.cfg"; '
+            'if has_existing_waydroid_state "$tmp/state" "$tmp/user" "$tmp/images"; '
+            'then echo existing; else echo fresh; fi; '
+            'rm "$tmp/state/waydroid.cfg"; mkdir -p "$tmp/state/partial"; '
+            'if has_existing_waydroid_state "$tmp/state" "$tmp/user" "$tmp/images"; '
+            'then echo existing; else echo fresh; fi'
+        )
+        result = self.shell(body)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ['fresh', 'existing', 'existing'])
+
 
 if __name__ == '__main__':
     unittest.main()
