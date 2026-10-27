@@ -1,4 +1,4 @@
-# Mirishita Waydroid Installer (MWI) 0.32
+# Mirishita Waydroid Installer (MWI) 0.33
 
 CachyOS / Arch Linux / Fedora / Ubuntu 26.04 + Waydroid Android 11環境で「アイドルマスター ミリオンライブ！ シアターデイズ（ミリシタ）」の動作環境を構築します。
 
@@ -7,7 +7,7 @@ CachyOS / Arch Linux / Fedora / Ubuntu 26.04 + Waydroid Android 11環境で「�
 - x86_64、AMD Radeon（`amdgpu`）
 - CachyOS / Arch Linux
 - dnf版Fedora（KDE Plasmaを含む、実機未検証。Kinoiteなどrpm-ostree版は対象外）
-- Ubuntu 26.04 LTS / PS5 Linux Kernel 7.1.7
+- Ubuntu 26.04 LTS / PS5 Linux Kernel 7.2.3
 - Wayland
 
 ## テスト環境
