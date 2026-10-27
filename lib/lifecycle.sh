@@ -638,7 +638,7 @@ lifecycle_main() {
         --dry-run) MODE=dry-run ;;
         --diagnose) MODE=diagnose ;; --install) MODE=install ;; --reset) MODE=reset ;; --reinstall) MODE=reinstall ;;
         --repair|--repair-bridge) MODE=repair ;; --restore) MODE=restore; BACKUP="${2:-}"; [[ -n "$BACKUP" ]] || die '復元パスが必要です。' ;;
-        --help|-h) printf 'MWI 0.32\n--dry-run / --diagnose / --install / --repair / --reset / --reinstall / --restore BACKUP\n'; return ;;
+        --help|-h) printf 'MWI 0.33\n--dry-run / --diagnose / --install / --repair / --reset / --reinstall / --restore BACKUP\n'; return ;;
         *) die '不明な引数です。--help を参照してください。' ;;
     esac
     if [[ "$MODE" == restore ]]; then [[ $# == 2 ]] || die '引数が不正です。'; else [[ $# -le 1 ]] || die '引数が多すぎます。'; fi

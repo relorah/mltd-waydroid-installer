@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-# MWI 0.32: diagnose, repair and install for CachyOS/Arch/Fedora/Ubuntu 26.04 AMD desktops.
+# MWI 0.33: diagnose, repair and install for CachyOS/Arch/Fedora/Ubuntu 26.04 AMD desktops.
 # Houdini is obtained by casualsnek/waydroid_script at setup time. It is not
 # bundled or redistributed by this repository.
 
